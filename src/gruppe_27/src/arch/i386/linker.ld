@@ -33,5 +33,6 @@ SECTIONS {
         *(.bss .bss.*)
     }
 
-	end = .; _end = .; __end = .;
+    . = ALIGN(4K);
+    end = .;
 }
