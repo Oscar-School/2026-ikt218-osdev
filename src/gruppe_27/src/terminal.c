@@ -64,7 +64,9 @@ void terminal_refresh_line(char* buffer_from_cursor) {
     // 3. Clear the "Tail"
     // We print one extra space to catch the 'ghost' character from backspace.
     // If you want to be safer, you can clear to the end of the line.
+   
     terminal_putchar(' ');
+
 
     // 4. Restore the cursor to the "logical" typing position
     // (Right after the character just typed, or at the same spot for backspace)

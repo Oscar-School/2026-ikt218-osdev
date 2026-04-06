@@ -59,6 +59,7 @@ int kernel_main() {
     // ── Main loop ────────────────────────────────────────────────────────────
  
     terminal_write("Kernel ready - type something:\n\n");
+    
     while (true) {
         __asm__("hlt");
     }

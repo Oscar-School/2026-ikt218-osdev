@@ -34,137 +34,99 @@ void keyboard_handler(struct registers *r) {
 
 
     if (scancode == 0x2A || scancode == 0x36) {
-
         shift_pressed = 1;
-
         return;
-
     }
 
     // Check for Shift Release (Break codes: Make + 0x80)
 
     if (scancode == 0xAA || scancode == 0xB6) {
-
         shift_pressed = 0;
-
         return;
-
     }
-
-
 
     // Ignore other "Key Release" events
-
     if (scancode & 0x80) {
-
         return;
-
     }
-
-
 
     // Pick the right table based on state
-
     char ascii;
-
     if (shift_pressed) {
-
         ascii = kbd_us_upper[scancode];
-
     } else {
-
         ascii = kbd_us[scancode];
-
     }
 
-
-
     if (scancode == SCAN_LEFT) {
-
         if (kbd_pos > 0) {
-
             kbd_pos--;
-
             terminal_move_left();
-
         }
-
         return;
-
     }
 
     if (scancode == SCAN_RIGHT) {
 
         // Only move right if there's a character to move over
-
         if (kbd_buffer[kbd_pos] != '\0') {
-
             kbd_pos++;
-
             terminal_move_right();
-
         }
-
         return;
-
     }
 
 
 
     if (ascii == '\b' && kbd_pos > 0) {
-
-        kbd_pos--;
-
-        // [Shift buffer left logic here]
-
-       
-
-        // Move cursor back visually
-
-        terminal_column--;
-
-       
-
-        // Refresh the line from the new position
-
-        terminal_refresh_line(&kbd_buffer[kbd_pos]);
-
+    // 1. Shift the buffer left to close the gap
+    for (int i = kbd_pos - 1; kbd_buffer[i] != '\0'; i++) {
+        kbd_buffer[i] = kbd_buffer[i + 1];
     }
+
+    // 2. Move logic position back
+    kbd_pos--;
+
+    // 3. Move cursor back visually
+    terminal_column--;
+    
+    // 4. Redraw the line from the new cursor position to the end
+    terminal_refresh_line(&kbd_buffer[kbd_pos]);
+}
 
     else if (ascii == '\n') {
 
         kbd_buffer[kbd_pos] = '\0';  // null-terminate
-
-        kbd_pos = 0;                
-
+        kbd_pos = 0;
+        kbd_buffer[0] = '\0';                
         terminal_putchar('\n');
-
-
-
+        return;
     }
 
     if (ascii != 0 && ascii != '\b' && ascii != '\n') {
-
-        // [Shift buffer right logic here]
-
-        kbd_buffer[kbd_pos] = ascii;
-
-       
-
-        // Move cursor forward FIRST for insertion
-
-        terminal_column++;
-
-       
-
-        // Refresh (this redraws the tail and moves cursor back to terminal_column)
-
-        terminal_refresh_line(&kbd_buffer[kbd_pos + 1]);
-
-       
-
-        kbd_pos++;
-
+    // 1. Calculate current length to shift properly
+    int len = 0;
+    while (kbd_buffer[len] != '\0') {
+        len++;
     }
+
+    // 2. Shift everything to the right (including the null terminator)
+    // We start from len and move down to kbd_pos
+    for (int i = len; i >= kbd_pos; i--) {
+        kbd_buffer[i + 1] = kbd_buffer[i];
+    }
+
+    // 3. Place the new character in the buffer
+    kbd_buffer[kbd_pos] = ascii;
+
+    // 4. Update the screen
+    // We print the new character and everything following it
+    terminal_refresh_line(&kbd_buffer[kbd_pos]);
+
+    // 5. Increment positions
+    kbd_pos++;
+    terminal_column++; 
+    terminal_update_cursor();
+}
 
 }
